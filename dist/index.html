@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.0/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-SI27wrMjH3ZZ89r4o+fGIJtnzkAnFs3E4qz9DIYioCQ5l9Rd/7UAa8DHcaL8jkWt" crossorigin="anonymous">
+    <link href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet"
+        integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <title>Document</title>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Cadastro de Nomes</h1>
+        <div class="row">
+            <div class="col-6">
+                <input type="text" id="texto" class="form-control"
+                    style="display:inline;vertical-align: inline;width:auto">
+                <button id="botao" class="btn btn-primary">
+                    Enviar
+                    <i class="fa fa-check" aria-hidden="true"></i>
+                </button>
+            </div>
+        </div>
+        <hr>
+        <h1 style="margin-top:2%;">Lista de Nomes</h1>
+        <div class="row">
+            <div class="col-6">
+                <ul class="list-group" id="lista"></ul>
+            </div>
+        </div>
+    </div>
+
+</body>
+
+<script>
+
+    window.onload = () => {
+        const lista = document.querySelector('#lista');
+        const botao = document.querySelector('#botao');
+        const texto = document.querySelector('#texto');
+
+        botao.addEventListener('click', create);
+        lista.addEventListener('click', del);
+        lista.addEventListener('click', edit);
+        read();
+    };
+
+    function templateLi(id, nome, element = true) {
+        return `
+            ${element ? `<li class="list-group-item">` : ''}
+                ${nome} 
+            <i class="btn btn-danger delete fa fa-trash" 
+                style="float: right; margin-left: 5px" 
+                data-id="${id}">
+                </i>
+            <i class="btn btn-primary update fa fa-edit" 
+                style="float: right; margin-left: 5px" 
+                data-id="${id}">
+                </i>  
+            ${element ? `</li>` : ''}
+        `;
+    }
+
+    function read() {
+        lista.innerHTML = '';
+
+        axios.get('/read')
+            .then((response) => {
+                response.data.forEach(element => {
+                    lista.innerHTML += templateLi(element.id, element.name)
+                });
+            })
+            .catch((error) => {
+                console.log(error);
+            })
+    }
+
+    function create() {
+        const name = texto.value;
+
+        axios.post('/create', { name })
+            .then(function (response) {
+                console.log(response);
+                lista.innerHTML += templateLi(response.data[0], name)
+                texto.value = ''
+            })
+
+    };
+
+    function del(element) {
+        console.log(element);
+
+        if (element.target.classList.contains('delete')) {
+            const id = element.target.dataset.id;
+
+            axios.delete('/delete/${id}')
+                .then(function (response) {
+                    if (response.status = 200) {
+                        lista.removeChild(element.path[1]);
+                    }
+                })
+                .catch(function (error) {
+                    console.log(error);
+                });
+        }
+
+    };
+
+
+    function edit(element) {
+        if (element.target.classList.contains('update')) {
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.setAttribute('value', '');
+            const pai = element.target.parentElement;
+            const id = element.target.dataset.id;
+
+            pai.innerHTML = '';
+            pai.appendChild(input);
+            input.addEventListener('keydown', update.bind(pai, id, input));
+            input.focus();
+        }
+
+    }
+
+    function update(id, input) {
+        const x = event.key;
+        if (x == null || x != 'Enter') return;
+
+        axios.put(`/update/${id}`, { name: input.value })
+            .then((response) => {
+                if (response.status = 200) {
+                    this.innerHTML = templateLi(id, input.value, false);
+                }
+            }).catch((error) => {
+                console.log(error);
+            });
+
+    };
+
+</script>
+
+</html>
